@@ -1,0 +1,10 @@
+numpy
+pandas
+plotly
+plotly.express
+plotly.graph_objects==5.15.0
+dash
+inspect
+base64
+platform
+os

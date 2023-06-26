@@ -437,6 +437,7 @@ sidebar = html.Div(
 app = dash.Dash(
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     title='H2ousing@work', )
+server = app.server
 app.config.suppress_callback_exceptions = True
 
 app.layout = html.Div([dcc.Location(id="url"), sidebar, content])

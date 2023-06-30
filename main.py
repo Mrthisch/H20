@@ -31,24 +31,23 @@ mod_v = 'v0.1'
 
 def import_data():
     df_labels = pd.read_csv('labels.csv')
-    df_vars = df_labels[df_labels['type'] == 'variable']
-    df_vars = df_vars.drop_duplicates(subset=['label'])
-    variables = df_vars['label'].tolist()
+    df_vars = df_labels['label']
+    variables = df_vars.tolist()
 
-    df_vars_context = df_vars[df_vars['origin'] == 'context'].reset_index()
+    df_vars_context = df_labels[df_labels['origin'] == 'Geographic context'].reset_index()
     df_vars_context_values = df_vars_context.loc[:, 'Aa en Hunze':'Weststellingwerf']
     variables_context = df_vars_context['label'].tolist()
 
     df_data = pd.read_csv('data.csv')
 
-    df_params = pd.read_csv('parameters.csv', header=None)
-    df_params = df_params.replace('#DIV/0!', 0).T
-    df_params.columns = df_params.iloc[0]
-    df_params = df_params[1:]
-    df_params = df_params.reset_index(drop=True)
+    # df_params = pd.read_csv('parameters.csv', header=None)
+    # df_params = df_params.replace('#DIV/0!', 0).T
+    # df_params.columns = df_params.iloc[0]
+    # df_params = df_params[1:]
+    # df_params = df_params.reset_index(drop=True)
 
-    municipalities = df_params.columns.values.tolist()
-    municipalities = municipalities[1:]
+    # municipalities = df_params.columns.values.tolist()
+    # municipalities = municipalities[1:]
 
     df_weights = pd.read_csv('weights.csv')
     df_weights = df_weights.replace('#DIV/0!', 0)
@@ -58,34 +57,25 @@ def import_data():
 
     ## Results
     Results_T1 = pd.DataFrame()
-    for i in df_params.columns[1:]:
-        result = df_weights['T1'].astype(float) * df_params[i].astype(float)
+    for i in df_labels.loc[:, 'Aa en Hunze':'Weststellingwerf']:
+        result = df_labels['weights_1'].astype(float) * df_labels[i].astype(float)
         result.name = i  # Set the name of the series as the column name
-        Results_T1 = Results_T1.append(result)
+        #Results_T1 = Results_T1.append(result)
+        Results_T1 = pd.concat([Results_T1, result], axis=1)
 
-    Results_T1.columns = params
     Results_T1 = Results_T1.T
+    Results_T1.columns = variables
     Score_T1 = Results_T1.sum()
 
     Results_T2 = pd.DataFrame()
-    for i in df_params.columns[1:]:
-        result = df_weights['T2'].astype(float) * df_params[i].astype(float)
+    for i in df_labels.loc[:, 'Aa en Hunze':'Weststellingwerf']:
+        result = df_labels['weights_2'].astype(float) * df_labels[i].astype(float)
         result.name = i  # Set the name of the series as the column name
-        Results_T2 = Results_T2.append(result)
+        Results_T2 = pd.concat([Results_T2, result], axis=1)
 
-    Results_T2.columns = params
     Results_T2 = Results_T2.T
+    Results_T2.columns = variables
     Score_T2 = Results_T2.sum()
-
-    Results_T3 = pd.DataFrame()
-    for i in df_params.columns[1:]:
-        result = df_weights['T3'].astype(float) * df_params[i].astype(float)
-        result.name = i  # Set the name of the series as the column name
-        Results_T3 = Results_T3.append(result)
-
-    Results_T3.columns = params
-    Results_T3 = Results_T3.T
-    Score_T3 = Results_T3.sum()
 
     logo = 'logo.png'
     def b64_image(logo):
@@ -98,12 +88,12 @@ import_data()
 
 ## Plot functions
 def typologies():
-    global fig_typ1, fig_typ2, fig_typ3
+    global fig_typ1, fig_typ2
     # Typologies sunburst charts
-    T1 = {   'Dimensions': np.array(df_weights['Sustainability Dimension']),
-             'Subcategories': np.array(df_weights['Subcategory']),
-             'Parameters': np.array(df_weights['Parameter']),
-             'Weights': np.array(df_weights['T1']),
+    T1 = {   'Dimensions': np.array(df_labels['dimension']),
+             'Subcategories': np.array(df_labels['category']),
+             'Parameters': np.array(df_labels['label']),
+             'Weights': np.array(df_labels['weights_1']),
              }
 
     typ1_data = pd.DataFrame(T1)
@@ -118,7 +108,7 @@ def typologies():
                             selector=dict(type='sunburst'))
     fig_typ1.update_layout(
         title={
-            'text': 'Typology 1',
+            'text': 'Typology 1: The Ecovillage',
             'y': 0.9,  # Adjust the y position of the title
             'x': 0.5,  # Adjust the x position of the title
             'xanchor': 'center',  # Set the title's x anchor to the center
@@ -126,11 +116,11 @@ def typologies():
         }
     )
 
-    T2 = {   'Dimensions': np.array(df_weights['Sustainability Dimension']),
-             'Subcategories': np.array(df_weights['Subcategory']),
-             'Parameters': np.array(df_weights['Parameter']),
-             'Weights': np.array(df_weights['T2']),
-             }
+    T2 = {'Dimensions': np.array(df_labels['dimension']),
+          'Subcategories': np.array(df_labels['category']),
+          'Parameters': np.array(df_labels['label']),
+          'Weights': np.array(df_labels['weights_2']),
+          }
 
     typ2_data = pd.DataFrame(T2)
     #colorMapSubset = dict(zip(strat_data.RGBColors, strat_data.RGBColors))
@@ -144,35 +134,7 @@ def typologies():
                             selector=dict(type='sunburst'))
     fig_typ2.update_layout(
         title={
-            'text': 'Typology 2',
-            'y': 0.9,  # Adjust the y position of the title
-            'x': 0.5,  # Adjust the x position of the title
-            'xanchor': 'center',  # Set the title's x anchor to the center
-            'yanchor': 'top'  # Set the title's y anchor to the top
-        }
-    )
-
-    T3 = {   'Dimensions': np.array(df_weights['Sustainability Dimension']),
-             'Subcategories': np.array(df_weights['Subcategory']),
-             'Parameters': np.array(df_weights['Parameter']),
-             'Weights': np.array(df_weights['T3']),
-          }
-
-    typ3_data = pd.DataFrame(T3)
-    # colorMapSubset = dict(zip(strat_data.RGBColors, strat_data.RGBColors))
-    fig_typ3 = plotly.express.sunburst(typ3_data,
-                                       path=['Dimensions', 'Subcategories','Parameters'],
-                                       values='Weights',
-                                       # color='RGBColors',
-                                       # color_discrete_map=colorMapSubset,
-                                       height=850
-                                       )
-    fig_typ3.update_traces(textinfo='label+percent parent')
-    fig_typ3.update_traces(plotly.graph_objects.Sunburst(hovertemplate='%{value}'),
-                           selector=dict(type='sunburst'))
-    fig_typ3.update_layout(
-        title={
-            'text': 'Typology 3',
+            'text': 'Typology 2,3,4: The Econeighbourhood',
             'y': 0.9,  # Adjust the y position of the title
             'x': 0.5,  # Adjust the x position of the title
             'xanchor': 'center',  # Set the title's x anchor to the center
@@ -193,13 +155,13 @@ def model_results():
     MAP_0 = go.Figure(data=plotly.graph_objects.Scattergeo(
         lon=df_data['longitude'],
         lat=df_data['latitude'],
-        hovertemplate='%{text}<extra><p><b>CONTEXT SCORE:</b></p><br>'
+        hovertemplate='%{text}<extra><p><b>Normalised geographic context score:</b></p><br>'
                       '%{customdata}'
                       '</extra>',
         text=df_data['municipality'],
         marker=dict(
             size=df_vars_context_values.sum(),
-            sizeref=0.1,
+            sizeref=0.3,
             opacity=0.9,
             color='green',
         ),
@@ -232,15 +194,27 @@ def model_results():
         coastlinecolor="rgb(128, 128, 128)",
     )
 
+    # df_MAP1 = pd.DataFrame()
+    # for i in range(len(df_data['municipality'])):
+    #     MAP1_string = ''
+    #     for j in range(len(variables)):
+    #         MAP1_string += variables[j] + ': ' + str(round(Results_T1.loc[j][i], 1)) + '<br>'
+    #
+    #     df_MAP1_string = pd.DataFrame([MAP1_string])  # Wrapping MAP0_string in a list
+    #     df_MAP1 = pd.concat([df_MAP1, df_MAP1_string], axis=0)
+    #     print(df_MAP1_string)
+
     MAP_1 = go.Figure(data=plotly.graph_objects.Scattergeo(
         lon=df_data['longitude'],  # Longitude of Amsterdam
         lat=df_data['latitude'],  # Latitude of Amsterdam
-        hovertemplate="%{text}<extra></extra>", #<br><a href=%{marker.link}>Click here for more info</a>",
+        hovertemplate="%{text}<extra><p><b>Factor results:</b></p><br>"
+                      #'%{customdata}'
+                      '</extra>',
         text=df_data['municipality'],
         marker=dict(
             size=Score_T1,  # Marker size based on land price data
             sizemode='area',  # Use area scaling for marker size
-            sizeref=0.1,  # Adjust the size scaling factor as needed
+            sizeref=0.3,  # Adjust the size scaling factor as needed
             color=Score_T1,  # Marker color based on land price data
             colorscale='Jet',  # Choose a colorscale for the marker colors
             reversescale=True,  # Reverse the colorscale if desired
@@ -254,12 +228,13 @@ def model_results():
                 x = 0.9,  # Adjust the x position of the colorbar
                 y = 0.5  # Adjust the y position of the colorbar
             )
-        )
+        ),
+        #customdata = df_MAP1,
     ))
 
     MAP_1.update_layout(
         height=750,
-        title='Typology 1 results',
+        title='Results P10 vs. Typology 1: Ecovillages',
         title_x=0.5,  # Adjust the x position of the title
         #geo_scope='netherlands',
         geo=dict(
@@ -313,12 +288,13 @@ def model_results():
     MAP_2 = go.Figure(data=plotly.graph_objects.Scattergeo(
         lon=df_data['longitude'],  # Longitude of Amsterdam
         lat=df_data['latitude'],  # Latitude of Amsterdam
-        hovertemplate="%{text}<extra></extra>", #<br><a href=%{marker.link}>Click here for more info</a>",
+        hovertemplate="%{text}<extra>"
+                      "</extra>", #<br><a href=%{marker.link}>Click here for more info</a>",
         text=df_data['municipality'],
         marker=dict(
             size=Score_T2,  # Marker size based on land price data
             sizemode='area',  # Use area scaling for marker size
-            sizeref=0.1,  # Adjust the size scaling factor as needed
+            sizeref=0.3,  # Adjust the size scaling factor as needed
             color=Score_T2,  # Marker color based on land price data
             colorscale='Jet',  # Choose a colorscale for the marker colors
             reversescale=True,  # Reverse the colorscale if desired
@@ -337,7 +313,7 @@ def model_results():
 
     MAP_2.update_layout(
         height=750,
-        title='Typology 2 results',
+        title='Results P10 vs. Typology 2,3,4: Econeighbourhoods',
         title_x=0.5,  # Adjust the x position of the title
         #geo_scope='netherlands',
         geo=dict(
@@ -373,13 +349,22 @@ content = html.Div(id="page-content",
 # Sidebar navigation
 sidebar = html.Div(
     [
-        html.Img(src=b64_image(logo),
-                     style={'width': '100%',
-                            'marginTop': 0, 'marginLeft': 0
-                            }),
+
+        html.A(
+            html.Img(
+                src=b64_image(logo),
+                style={
+                    'width': '100%',
+                    'marginTop': 0,
+                    'marginLeft': 0
+                }
+            ),
+            href="/",
+        ),
         html.H2(dbc.NavLink(Pname, id='sidebar-title', href="/",
                             style={"color": "Black",
                                    'fontSize': 26,
+                                   'text-align': 'center',
                                    }
                             ),
                 {'fontWeight': "bold",
@@ -475,13 +460,10 @@ def render_page_content(pathname):
             dcc.Graph(figure=fig_typ2,
                       style={'textAlign': 'center',
                              'display': 'inline-block'}),
-            dcc.Graph(figure=fig_typ3,
-                      style={'textAlign': 'center',
-                             'display': 'inline-block'}),
             dash_table.DataTable(
                 id='datatable-input',
                 columns=[
-                    {"name": i, "id": i} for i in df_weights.columns[2:]
+                    {"name": i, "id": i} for i in df_labels.loc[:,['index', 'origin', 'category', 'dimension', 'label', 'weights_1', 'weights_2']]
                 ],
                 editable=True,
                 page_current=0,
@@ -543,10 +525,10 @@ def render_page_content(pathname):
                            'marginLeft': 55,
                            'marginTop': 0,
                             }),
-            dcc.Graph(figure=fig_1,
-                      style={
-                          'marginTop': 0,
-                      }),
+            # dcc.Graph(figure=fig_1,
+            #           style={
+            #               'marginTop': 0,
+            #           }),
         ])
     elif pathname == "/" + Pname_CODE + "/results":
         model_results()
@@ -597,15 +579,15 @@ def change_button_style(n_clicks):
 )
 def search(page_current, page_size, sort_by, filter_string):
     # Filter
-    dff_weights = df_weights[df_weights.apply(lambda row: row.str.contains(filter_string, regex=False).any(), axis=1)]
+    dff_labels = df_labels[df_labels.apply(lambda row: row.str.contains(filter_string, regex=False).any(), axis=1)]
     # Sort if necessary
     if len(sort_by):
-        dff_weights = dff_weights.sort_values(
+        dff_labels = dff_labels.sort_values(
             sort_by[0]['column_id'],
             ascending=sort_by[0]['direction'] == 'asc',
             inplace=False
         )
-    return dff_weights.iloc[
+    return dff_labels.iloc[
            page_current * page_size:(page_current + 1) * page_size
            ].to_dict('records')
 
@@ -616,7 +598,7 @@ def search(page_current, page_size, sort_by, filter_string):
     prevent_initial_call=True,
 )
 def func(n_clicks):
-    return dcc.send_data_frame(df_weights.to_csv, "weights.csv")
+    return dcc.send_data_frame(df_labels.to_csv, "labels.csv")
 
 # Datatable CSV save
 @app.callback(
@@ -634,6 +616,6 @@ def save(n_clicks, data):
 
 if __name__ == '__main__':
     app.run_server(debug=True, host='0.0.0.0', port=8080, use_reloader=False)
-    # Runs @ local host e.g. "http://127.0.0.1:8080/" OR server subhost "http://10.10.10.200:8080/" = "http://vbg-pr01:8080/"
+    # Runs @ local host e.g. "http://127.0.0.1:8080/" OR server subhost "http://10.10.10.200:8080/"
 
 #os.close()
